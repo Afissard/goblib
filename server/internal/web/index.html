@@ -1,0 +1,28 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Manga Library</title>
+</head>
+
+<body>
+
+<h1>Hello World!</h1>
+
+<button id="btn">
+    Call API
+</button>
+
+<p id="result"></p>
+
+<script>
+    document.getElementById("btn").onclick = async () => {
+        const response = await fetch("/hello");
+        const json = await response.json();
+
+        document.getElementById("result").innerText = json.message;
+    };
+</script>
+
+</body>
+</html>

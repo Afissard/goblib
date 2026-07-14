@@ -2,6 +2,7 @@ go 1.26.4
 
 use (
 	./clients/cli
+	./clients/web
 	./server
 	./shared
 )

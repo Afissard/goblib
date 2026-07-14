@@ -11,5 +11,7 @@ func NewRouter() http.Handler {
 
 	mux.HandleFunc("GET /hello", handlers.Hello)
 
+	mux.Handle("/", http.FileServer(http.Dir("internal/web")))
+
 	return mux
 }
