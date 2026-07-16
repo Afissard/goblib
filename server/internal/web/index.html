@@ -1,28 +1,13 @@
-﻿<!DOCTYPE html>
-<html>
-
-<head>
-    <title>Manga Library</title>
-</head>
-
-<body>
-
-<h1>Hello World!</h1>
-
-<button id="btn">
-    Call API
-</button>
-
-<p id="result"></p>
-
-<script>
-    document.getElementById("btn").onclick = async () => {
-        const response = await fetch("/hello");
-        const json = await response.json();
-
-        document.getElementById("result").innerText = json.message;
-    };
-</script>
-
-</body>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>web</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>
