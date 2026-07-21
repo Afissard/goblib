@@ -1,42 +1,26 @@
-﻿import type {Book} from "../types/book";
+﻿import BookLine from "./BookLine";
 
 interface Props {
-    books: Book[];
-    selected?: Book;
-    onSelect(book: Book): void;
+    books?: any[];
+    selected?: any;
+    onSelect?(book: any): void;
 }
 
-export default function BookList({
-                                     books,
-                                     selected,
-                                     onSelect
-                                 }: Props) {
+export default function BookList({ books = [], selected, onSelect }: Props) {
+    if (!books || books.length === 0) {
+        return <div className="p-4 text-gray-400">No books found</div>;
+    }
 
     return (
         <div className="overflow-auto">
-
-            {books.map(book => (
-
-                <div
-                    key={book.id}
-                    onClick={() => onSelect(book)}
-                    className={
-                        "cursor-pointer p-3 border-b border-gray-700 hover:bg-gray-800 " +
-                        (selected?.id === book.id ? "bg-gray-800" : "")
-                    }
-                >
-                    <div className="font-semibold">
-                        {book.title}
-                    </div>
-
-                    <div className="text-sm text-gray-400">
-                        {book.author}
-                    </div>
-
-                </div>
-
+            {books.map((book, idx) => (
+                <BookLine
+                    key={book.id ?? book.ID ?? idx}
+                    book={book}
+                    selected={selected}
+                    onSelect={onSelect}
+                />
             ))}
-
         </div>
     );
 }
