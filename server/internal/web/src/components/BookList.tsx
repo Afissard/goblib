@@ -10,7 +10,7 @@ export default function BookList({ books = [], selected, onSelect }: Props) {
     if (!books || books.length === 0) {
         return <div className="p-4 text-gray-400">No books found</div>;
     }
-
+    // TODO: add sorting by name, author, etc
     return (
         <div className="overflow-auto">
             {books.map((book, idx) => (

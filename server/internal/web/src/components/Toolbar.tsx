@@ -7,7 +7,7 @@ export default function Toolbar({ onNew }: Props) {
     return (
         <div className="flex justify-between items-center p-4 border-b border-gray-700">
             <h1 className="text-3xl font-bold">
-                Manga Library
+                Goblib
             </h1>
 
             <button

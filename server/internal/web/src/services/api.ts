@@ -2,6 +2,14 @@
 
 const API = "/api/books";
 
+export interface CreateBookInput {
+    title: string;
+    author?: string;
+    summary?: string;
+    language?: string;
+    source_url?: string;
+}
+
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
     const response = await fetch(url, init);
 
@@ -20,14 +28,23 @@ export function getBook(id: string): Promise<Book> {
     return request<Book>(`${API}/${id}`);
 }
 
-export function createBook(book: Partial<Book>): Promise<Book> {
-    return request<Book>(API, {
+export async function createBook(book: CreateBookInput): Promise<void> {
+    const params = new URLSearchParams();
+
+    params.set("title", book.title);
+
+    if (book.author) params.set("author", book.author);
+    if (book.summary) params.set("summary", book.summary);
+    if (book.language) params.set("language", book.language);
+    if (book.source_url) params.set("source_url", book.source_url);
+
+    const response = await fetch(`${API}?${params.toString()}`, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify(book),
     });
+
+    if (!response.ok) {
+        throw new Error(await response.text());
+    }
 }
 
 export function updateBook(book: Book): Promise<Book> {
