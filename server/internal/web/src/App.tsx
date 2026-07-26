@@ -4,6 +4,7 @@ import BookDetails from "./components/BookDetails";
 import { listBooks } from "./services/api";
 import Toolbar from "./components/Toolbar.tsx";
 import BookForm from "./components/BookForm";
+import BookUpdateForm from "./components/BookUpdateForm.tsx";
 
 function normalize(book: any) {
     return {
@@ -22,6 +23,7 @@ export default function App() {
     const [books, setBooks] = useState<any[]>([]);
     const [selected, setSelected] = useState<any | undefined>(undefined);
     const [isBookFormOpen, setIsBookFormOpen] = useState(false);
+    const [isBookUpdateFormOpen, setIsBookUpdateFormOpen] = useState(false);
 
     async function refreshBooks() {
         try {
@@ -52,7 +54,7 @@ export default function App() {
                 </div>
 
                 <div className="flex-1 p-6 overflow-auto">
-                    <BookDetails book={selected} />
+                    <BookDetails book={selected} onUpdateBook={ () => setIsBookUpdateFormOpen(true) } />
                 </div>
             </div>
 
@@ -60,6 +62,13 @@ export default function App() {
                 open={isBookFormOpen}
                 onClose={() => setIsBookFormOpen(false)}
                 onCreated={refreshBooks}
+            />
+
+            <BookUpdateForm
+                open={isBookUpdateFormOpen}
+                onClose={() => setIsBookUpdateFormOpen(false)}
+                onUpdated={refreshBooks}
+                book={selected}
             />
         </div>
     );
