@@ -1,69 +1,66 @@
-﻿package database
+package database
 
 import (
 	"database/sql"
 	"errors"
+
+	"github.com/google/uuid"
 )
 
 var ErrBookNotFound = errors.New("book not found")
 
-func (d *Database) CreateBook(book Book) error {
+func (d *Database) CreateBook(book *Book) error {
 	const query = `
 INSERT INTO books(
-	id,
+	book_id,
+	series_id,
 	title,
-	author,
+	author_id,
 	summary,
-	language,
-	source_url,
-	root_path,
-	cover_path
+	language_id,
+	cover_img_path
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?)
 `
-
 	_, err := d.db.Exec(
 		query,
-		book.ID,
+		uuid.NewString(),
+		book.SeriesID,
 		book.Title,
-		book.Author,
+		book.AuthorID,
 		book.Summary,
-		book.Language,
-		book.SourceURL,
-		book.RootPath,
-		book.CoverPath,
+		book.LanguageID,
+		book.CoverImagePath,
 	)
 
 	return err
 }
 
-func (d *Database) GetBook(id string) (*Book, error) {
+func (d *Database) GetBookById(id string) (*Book, error) {
 
 	const query = `
 SELECT
-	id,
+    book_id,
+	series_id,
 	title,
-	author,
+	author_id,
 	summary,
-	language,
-	source_url,
-	root_path,
-	cover_path
+	language_id,
+	cover_img_path
 FROM books
-WHERE id = ?
+WHERE book_id = ?
 `
 
 	var book Book
 
 	err := d.db.QueryRow(query, id).Scan(
 		&book.ID,
+		&book.SeriesID,
 		&book.Title,
-		&book.Author,
+		&book.AuthorID,
 		&book.Summary,
-		&book.Language,
-		&book.SourceURL,
-		&book.RootPath,
-		&book.CoverPath,
+		&book.LanguageID,
+		&book.CoverImagePath,
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
@@ -77,28 +74,112 @@ WHERE id = ?
 	return &book, nil
 }
 
+// GetBookByTitle :
+// WARNING: assume that each book title is unique !
+func (d *Database) GetBookByTitle(title string) (*Book, error) {
+	const query = `
+SELECT
+	book_id,
+	series_id,
+	title,
+	author_id,
+	summary,
+	language_id,
+	cover_img_path
+FROM books
+WHERE title = ?
+`
+	var book Book
+
+	err := d.db.QueryRow(query, title).Scan(
+		&book.ID,
+		&book.SeriesID,
+		&book.Title,
+		&book.AuthorID,
+		&book.Summary,
+		&book.LanguageID,
+		&book.CoverImagePath,
+	)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrBookNotFound
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &book, nil
+}
+
+func (d *Database) GetBooksBySeriesId(seriesId string) ([]Book, error) {
+	const query = `
+SELECT 
+	book_id,
+	series_id,
+	title,
+	author_id,
+	summary,
+	language_id,
+	cover_img_path
+FROM books
+WHERE series_id = ?
+`
+	var books []Book
+
+	rows, err := d.db.Query(query, seriesId)
+	if err != nil {
+		return nil, err
+	}
+	defer func(rows *sql.Rows) {
+		err = rows.Close()
+		if err != nil {
+			return
+		}
+	}(rows)
+	for rows.Next() {
+		var book Book
+		err = rows.Scan(
+			&book.ID,
+			&book.SeriesID,
+			&book.Title,
+			&book.AuthorID,
+			&book.Summary,
+			&book.LanguageID,
+			&book.CoverImagePath)
+		if err != nil {
+			return nil, err
+		}
+		books = append(books, book)
+	}
+	return books, nil
+}
+
 func (d *Database) ListBooks() ([]Book, error) {
 
 	const query = `
 SELECT
-	id,
+    book_id,
+	series_id,
 	title,
-	author,
+	author_id,
 	summary,
-	language,
-	source_url,
-	root_path,
-	cover_path
+	language_id,
+	cover_img_path
 FROM books
 ORDER BY title
 `
-
 	rows, err := d.db.Query(query)
 	if err != nil {
 		return nil, err
 	}
 
-	defer rows.Close()
+	defer func(rows *sql.Rows) {
+		err = rows.Close()
+		if err != nil {
+			return
+		}
+	}(rows)
 
 	var books []Book
 
@@ -106,15 +187,14 @@ ORDER BY title
 
 		var book Book
 
-		err := rows.Scan(
+		err = rows.Scan(
 			&book.ID,
+			&book.SeriesID,
 			&book.Title,
-			&book.Author,
+			&book.AuthorID,
 			&book.Summary,
-			&book.Language,
-			&book.SourceURL,
-			&book.RootPath,
-			&book.CoverPath,
+			&book.LanguageID,
+			&book.CoverImagePath,
 		)
 
 		if err != nil {
@@ -127,10 +207,10 @@ ORDER BY title
 	return books, rows.Err()
 }
 
-func (d *Database) DeleteBook(id string) error {
+func (d *Database) DeleteBookById(id string) error {
 
 	result, err := d.db.Exec(
-		`DELETE FROM books WHERE id = ?`,
+		`DELETE FROM books WHERE book_id = ?`,
 		id,
 	)
 
@@ -150,29 +230,27 @@ func (d *Database) DeleteBook(id string) error {
 	return nil
 }
 
-func (d *Database) UpdateBook(book Book) error {
+func (d *Database) UpdateBook(book *Book) error {
 
 	result, err := d.db.Exec(
 		`
 UPDATE books
 SET
+	series_id = ?,
 	title = ?,
-	author = ?,
+	author_id = ?,
 	summary = ?,
-	language = ?,
-	source_url = ?,
-	root_path = ?,
-	cover_path = ?
-WHERE id = ?
+	language_id = ?,
+	cover_img_path = ?
+WHERE book_id = ?
 `,
-		book.Title,
-		book.Author,
-		book.Summary,
-		book.Language,
-		book.SourceURL,
-		book.RootPath,
-		book.CoverPath,
-		book.ID,
+		&book.SeriesID,
+		&book.Title,
+		&book.AuthorID,
+		&book.Summary,
+		&book.LanguageID,
+		&book.CoverImagePath,
+		&book.ID,
 	)
 
 	if err != nil {

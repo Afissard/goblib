@@ -1,4 +1,4 @@
-﻿package handlers
+package handlers
 
 import (
 	"encoding/json"
@@ -30,7 +30,7 @@ func (h *BookHandler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	book, err := h.Manager.Get(id)
+	book, err := h.Manager.GetBookById(id)
 	if err != nil {
 		if errors.Is(err, database.ErrBookNotFound) {
 			h.Logger.LogMessage("Bookhandler.Get : not found", shared.LogLevelError)
@@ -53,7 +53,7 @@ func (h *BookHandler) Get(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *BookHandler) List(w http.ResponseWriter, r *http.Request) {
-	books, err := h.Manager.List()
+	books, err := h.Manager.ListBooks()
 	if err != nil {
 		h.Logger.LogMessage("Bookhandler.List : error while searching for books", shared.LogLevelError)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -69,7 +69,7 @@ func (h *BookHandler) List(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *BookHandler) Create(w http.ResponseWriter, r *http.Request) {
-	h.Manager.Create(w, r)
+	h.Manager.CreateBook(w, r)
 	h.Logger.LogMessage("Bookhandler.Create : wrote response", shared.LogLevelInfo)
 }
 
@@ -79,7 +79,7 @@ func (h *BookHandler) Update(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing book id", http.StatusBadRequest)
 		return
 	}
-	_, err := h.Manager.Get(id)
+	_, err := h.Manager.GetBookById(id)
 	if err != nil {
 		if errors.Is(err, database.ErrBookNotFound) {
 			http.Error(w, "book not found", http.StatusNotFound)
@@ -90,7 +90,7 @@ func (h *BookHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Manager.Update(w, r)
+	h.Manager.UpdateBook(w, r)
 	h.Logger.LogMessage("Bookhandler.Update : wrote response", shared.LogLevelInfo)
 }
 
@@ -101,7 +101,7 @@ func (h *BookHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing book id", http.StatusBadRequest)
 		return
 	}
-	err := h.Manager.Delete(id)
+	err := h.Manager.DeleteBookById(id)
 	if err != nil {
 		if errors.Is(err, database.ErrBookNotFound) {
 			h.Logger.LogMessage("Bookhandler.Delete : book not found", shared.LogLevelError)

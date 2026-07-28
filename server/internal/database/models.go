@@ -1,15 +1,43 @@
-﻿package database
+package database
 
-type Book struct {
+type Series struct {
 	ID string
 
+	Title          string
+	AuthorID       string
+	Summary        string
+	SourceURL      string
+	CoverImagePath string
+}
+
+type Book struct {
+	ID       string
+	SeriesID string
+
+	Title          string
+	AuthorID       string
+	Summary        string
+	LanguageID     string
+	CoverImagePath string
+}
+
+type Chapter struct {
+	ID     string
+	BookID string
+
 	Title   string
-	Author  string
 	Summary string
 
-	Language  string
-	SourceURL string
+	// TODO: Add more fields for chapter, such as content, page count, etc.
+}
 
-	RootPath  string
-	CoverPath string
+type Author struct {
+	ID   string
+	Name string
+	// Maybe add more fields later
+}
+
+type Language struct {
+	ID   string
+	Name string
 }

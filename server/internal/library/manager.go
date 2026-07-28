@@ -1,6 +1,7 @@
-﻿package library
+package library
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/afissard/goblib/server/internal/database"
@@ -19,59 +20,56 @@ func NewManager(db *database.Database, logger *shared.Logger) *Manager {
 	}
 }
 
-func (m *Manager) Import(path string) (*database.Book, error) {
+func (m *Manager) ImportBook(path string) (*database.Book, error) {
 	// TODO
 	return nil, nil
 }
 
-func (m *Manager) Create(w http.ResponseWriter, r *http.Request) {
+func (m *Manager) CreateBook(w http.ResponseWriter, r *http.Request) {
 	// create a book in the database, based on the request
-	err := m.db.CreateBook(database.Book{
-		Title:     r.URL.Query().Get("title"),
-		Author:    r.URL.Query().Get("author"),
-		Summary:   r.URL.Query().Get("summary"),
-		Language:  r.URL.Query().Get("language"),
-		SourceURL: r.URL.Query().Get("source_url"),
+	newBook := &database.Book{
+		Title:      r.URL.Query().Get("title"),
+		AuthorID:   r.URL.Query().Get("author"),
+		Summary:    r.URL.Query().Get("summary"),
+		LanguageID: r.URL.Query().Get("language"),
 		// TODO: add later a way to import an image for the cover
-	})
+	}
+	err := m.db.CreateBook(newBook)
 	if err != nil {
-		m.logger.LogMessage("LibraryManager.Create : internal server error while creating book", shared.LogLevelError)
+		m.logger.LogMessage(fmt.Sprintf("LibraryManager.Create : internal server error while creating book: %v", newBook), shared.LogLevelError)
 		http.Error(w, "Failed to create book", http.StatusInternalServerError)
 		return
 	}
-	m.logger.LogMessage("LibraryManager.Create : successfully created book", shared.LogLevelInfo)
+	m.logger.LogMessage(fmt.Sprintf("LibraryManager.Create : successfully created book: %v", newBook), shared.LogLevelInfo)
 }
 
-func (m *Manager) List() ([]database.Book, error) {
+func (m *Manager) ListBooks() ([]database.Book, error) {
 	return m.db.ListBooks()
 }
 
-func (m *Manager) Get(id string) (*database.Book, error) {
-	return m.db.GetBook(id)
+func (m *Manager) GetBookById(id string) (*database.Book, error) {
+	return m.db.GetBookById(id)
 }
 
-func (m *Manager) Delete(id string) error {
-	return m.db.DeleteBook(id)
+func (m *Manager) DeleteBookById(id string) error {
+	return m.db.DeleteBookById(id)
 }
 
-func (m *Manager) Update(w http.ResponseWriter, r *http.Request) {
-
-	err := m.db.UpdateBook(database.Book{
-		ID:        r.URL.Query().Get("id"),
-		Title:     r.URL.Query().Get("title"),
-		Author:    r.URL.Query().Get("author"),
-		Summary:   r.URL.Query().Get("summary"),
-		Language:  r.URL.Query().Get("language"),
-		SourceURL: r.URL.Query().Get("source_url"),
+func (m *Manager) UpdateBook(w http.ResponseWriter, r *http.Request) {
+	updatedBook := &database.Book{
+		ID:         r.URL.Query().Get("id"),
+		SeriesID:   r.URL.Query().Get("series"),
+		Title:      r.URL.Query().Get("title"),
+		AuthorID:   r.URL.Query().Get("author"),
+		Summary:    r.URL.Query().Get("summary"),
+		LanguageID: r.URL.Query().Get("language"),
 		// TODO: add later a way to import an image for the cover
-	})
-	if err != nil {
-		m.logger.LogMessage("LibraryManager.Update : internal server error while updating book", shared.LogLevelError)
-		http.Error(w, "Failed to update book", http.StatusInternalServerError)
 	}
-	m.logger.LogMessage("LibraryManager.Update : successfully updated book", shared.LogLevelInfo)
-}
-
-func (m *Manager) DeleteBook(id string) error {
-	return m.db.DeleteBook(id)
+	err := m.db.UpdateBook(updatedBook)
+	if err != nil {
+		m.logger.LogMessage(fmt.Sprintf("LibraryManager.Update : internal server error while updating book: %v", updatedBook), shared.LogLevelError)
+		http.Error(w, "Failed to update book", http.StatusInternalServerError)
+		return
+	}
+	m.logger.LogMessage(fmt.Sprintf("LibraryManager.Update : successfully updated book: %v", updatedBook), shared.LogLevelInfo)
 }
