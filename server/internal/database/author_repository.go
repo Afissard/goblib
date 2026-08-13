@@ -9,7 +9,7 @@ import (
 
 var ErrAuthorNotFound = errors.New("author not found")
 
-func (d *Database) CreateAuthor(author Author) error {
+func (d *Database) CreateAuthor(author Author) (Author, error) {
 	const query = `
 INSERT INTO author(
 	id,
@@ -21,10 +21,13 @@ values(?, ?)
 		query,
 		uuid.NewString(),
 		author.Name)
-	return err
+	if err != nil {
+		return Author{}, err
+	}
+	return author, nil
 }
 
-func (d *Database) GetAuthorByName(name string) (*Author, error) {
+func (d *Database) GetAuthorByName(name string) (Author, error) {
 	const query = `
 SELECT
 	id,
@@ -41,14 +44,14 @@ WHERE name = ?
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrAuthorNotFound
+			return Author{}, ErrAuthorNotFound
 		}
-		return nil, err
+		return Author{}, err
 	}
-	return &author, nil
+	return author, nil
 }
 
-func (d *Database) GetAuthorByID(id int) (*Author, error) {
+func (d *Database) GetAuthorById(id string) (Author, error) {
 	const query = `
 SELECT
 	id,
@@ -63,13 +66,14 @@ WHERE id = ?
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrAuthorNotFound
+			return Author{}, ErrAuthorNotFound
 		}
+		return Author{}, ErrAuthorNotFound
 	}
-	return &author, nil
+	return author, nil
 }
 
-func (d *Database) DeleteAuthorByID(id int) error {
+func (d *Database) DeleteAuthorById(id string) error {
 	const query = `
 DELETE FROM author
 WHERE id = ?
@@ -78,17 +82,21 @@ WHERE id = ?
 	return err
 }
 
-func (d *Database) UpdateAuthor(author *Author) error {
+func (d *Database) UpdateAuthor(author *Author) (Author, error) {
 	const query = `
 UPDATE author
 SET name = ?
 WHERE id = ?
 `
 	_, err := d.db.Exec(query, author.Name, author.ID)
-	return err
+	if err != nil {
+		return Author{}, err
+	}
+
+	return *author, nil
 }
 
-func (d *Database) ListAuthors() ([]*Author, error) {
+func (d *Database) ListAuthors() ([]Author, error) {
 	const query = `
 SELECT
 	id,
@@ -106,23 +114,14 @@ ORDER BY name
 			return
 		}
 	}(rows)
-	authors := make([]*Author, 0)
+	authors := make([]Author, 0)
 	for rows.Next() {
 		var author Author
 		err = rows.Scan(&author.ID, &author.Name)
 		if err != nil {
 			return nil, err
 		}
-		authors = append(authors, &author)
+		authors = append(authors, author)
 	}
 	return authors, nil
-}
-
-func (d *Database) DeleteAuthor(id string) error {
-	const query = `
-DELETE FROM author
-WHERE id = ?
-`
-	_, err := d.db.Exec(query, id)
-	return err
 }

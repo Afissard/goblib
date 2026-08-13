@@ -9,7 +9,7 @@ import (
 
 var ErrLanguageNotFound = errors.New("language not found")
 
-func (d *Database) CreateLanguage(language Language) error {
+func (d *Database) CreateLanguage(language Language) (Language, error) {
 	const query = `
 INSERT INTO languages(
     id,
@@ -18,10 +18,13 @@ INSERT INTO languages(
 values(?, ?)
 `
 	_, err := d.db.Exec(query, uuid.NewString(), language.Name)
-	return err
+	if err != nil {
+		return Language{}, err
+	}
+	return language, nil
 }
 
-func (d *Database) GetLanguageByName(name string) (*Language, error) {
+func (d *Database) GetLanguageByName(name string) (Language, error) {
 	const query = `
 SELECT
 	id,
@@ -38,14 +41,14 @@ WHERE name = ?
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrLanguageNotFound
+			return Language{}, ErrLanguageNotFound
 		}
-		return nil, err
+		return Language{}, err
 	}
-	return &language, nil
+	return language, nil
 }
 
-func (d *Database) GetLanguageByID(id int) (*Language, error) {
+func (d *Database) GetLanguageByID(id string) (Language, error) {
 	const query = `
 SELECT
 	id,
@@ -60,13 +63,14 @@ WHERE id = ?
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrLanguageNotFound
+			return Language{}, ErrLanguageNotFound
 		}
+		return Language{}, err
 	}
-	return &language, nil
+	return language, nil
 }
 
-func (d *Database) DeleteLanguageByID(id int) error {
+func (d *Database) DeleteLanguageByID(id string) error {
 	const query = `
 DELETE FROM languages
 WHERE id = ?
@@ -75,17 +79,20 @@ WHERE id = ?
 	return err
 }
 
-func (d *Database) UpdateLanguage(Language *Language) error {
+func (d *Database) UpdateLanguage(language *Language) (Language, error) {
 	const query = `
 UPDATE languages
 SET name = ?
 WHERE id = ?
 `
-	_, err := d.db.Exec(query, Language.Name, Language.ID)
-	return err
+	_, err := d.db.Exec(query, language.Name, language.ID)
+	if err != nil {
+		return Language{}, err
+	}
+	return *language, nil
 }
 
-func (d *Database) ListLanguages() ([]*Language, error) {
+func (d *Database) ListLanguages() ([]Language, error) {
 	const query = `
 SELECT
 	id,
@@ -103,23 +110,14 @@ ORDER BY name
 			return
 		}
 	}(rows)
-	languages := make([]*Language, 0)
+	languages := make([]Language, 0)
 	for rows.Next() {
 		var language Language
 		err = rows.Scan(&language.ID, &language.Name)
 		if err != nil {
 			return nil, err
 		}
-		languages = append(languages, &language)
+		languages = append(languages, language)
 	}
 	return languages, nil
-}
-
-func (d *Database) DeleteLanguage(id string) error {
-	const query = `
-DELETE FROM languages
-WHERE id = ?
-`
-	_, err := d.db.Exec(query, id)
-	return err
 }
