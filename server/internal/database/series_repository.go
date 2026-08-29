@@ -9,7 +9,7 @@ import (
 
 var ErrSeriesNotFound = errors.New("series not found")
 
-func (d *Database) CreateSeries(series Series) error {
+func (d *Database) CreateSeries(series Series) (Series, error) {
 	var query = `
 INSERT INTO series (
     id,
@@ -29,10 +29,14 @@ VALUES (?, ?, ?, ?, ?, ?)
 		series.Summary,
 		series.SourceURL,
 		series.CoverImagePath)
-	return err
+
+	if err != nil {
+		return Series{}, err
+	}
+	return series, nil
 }
 
-func (d *Database) GetSeriesByID(id string) (Series, error) {
+func (d *Database) GetSeriesById(id string) (Series, error) {
 	var query = `
 SELECT
 	id,
@@ -86,7 +90,7 @@ WHERE title = ?
 	return series, nil
 }
 
-func (d *Database) UpdateSeriesByID(series Series) error {
+func (d *Database) UpdateSeries(series Series) (Series, error) {
 	var query = `
 UPDATE series
 SET 
@@ -105,10 +109,13 @@ WHERE id = ?
 		series.SourceURL,
 		series.CoverImagePath,
 		series.ID)
-	return err
+	if err != nil {
+		return Series{}, err
+	}
+	return series, nil
 }
 
-func (d *Database) DeleteSeriesByID(id string) error {
+func (d *Database) DeleteSeriesById(id string) error {
 	var query = `
 DELETE FROM series
 WHERE id = ?

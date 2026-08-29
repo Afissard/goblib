@@ -1,9 +1,6 @@
 package library
 
 import (
-	"fmt"
-	"net/http"
-
 	"github.com/afissard/goblib/server/internal/database"
 	shared "github.com/afissard/goblib/shared/logger"
 )
@@ -20,6 +17,7 @@ func NewManager(db *database.Database, logger *shared.Logger) *Manager {
 	}
 }
 
+/*
 func (m *Manager) ImportBook(path string) (*database.Book, error) {
 	// TODO
 	return nil, nil
@@ -73,3 +71,4 @@ func (m *Manager) UpdateBook(w http.ResponseWriter, r *http.Request) {
 	}
 	m.logger.LogMessage(fmt.Sprintf("LibraryManager.Update : successfully updated book: %v", updatedBook), shared.LogLevelInfo)
 }
+*/

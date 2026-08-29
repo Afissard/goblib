@@ -48,7 +48,7 @@ WHERE name = ?
 	return language, nil
 }
 
-func (d *Database) GetLanguageByID(id string) (Language, error) {
+func (d *Database) GetLanguageById(id string) (Language, error) {
 	const query = `
 SELECT
 	id,
@@ -70,7 +70,7 @@ WHERE id = ?
 	return language, nil
 }
 
-func (d *Database) DeleteLanguageByID(id string) error {
+func (d *Database) DeleteLanguageById(id string) error {
 	const query = `
 DELETE FROM languages
 WHERE id = ?
@@ -79,7 +79,7 @@ WHERE id = ?
 	return err
 }
 
-func (d *Database) UpdateLanguage(language *Language) (Language, error) {
+func (d *Database) UpdateLanguage(language Language) (Language, error) {
 	const query = `
 UPDATE languages
 SET name = ?
@@ -89,7 +89,7 @@ WHERE id = ?
 	if err != nil {
 		return Language{}, err
 	}
-	return *language, nil
+	return language, nil
 }
 
 func (d *Database) ListLanguages() ([]Language, error) {

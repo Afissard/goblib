@@ -82,7 +82,7 @@ WHERE id = ?
 	return err
 }
 
-func (d *Database) UpdateAuthor(author *Author) (Author, error) {
+func (d *Database) UpdateAuthor(author Author) (Author, error) {
 	const query = `
 UPDATE author
 SET name = ?
@@ -93,7 +93,7 @@ WHERE id = ?
 		return Author{}, err
 	}
 
-	return *author, nil
+	return author, nil
 }
 
 func (d *Database) ListAuthors() ([]Author, error) {

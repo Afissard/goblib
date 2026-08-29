@@ -9,7 +9,7 @@ import (
 
 var ErrBookNotFound = errors.New("book not found")
 
-func (d *Database) CreateBook(book *Book) error {
+func (d *Database) CreateBook(book Book) (Book, error) {
 	const query = `
 INSERT INTO books(
 	book_id,
@@ -32,11 +32,13 @@ VALUES (?, ?, ?, ?, ?, ?, ?)
 		book.LanguageID,
 		book.CoverImagePath,
 	)
-
-	return err
+	if err != nil {
+		return Book{}, err
+	}
+	return book, nil
 }
 
-func (d *Database) GetBookById(id string) (*Book, error) {
+func (d *Database) GetBookById(id string) (Book, error) {
 
 	const query = `
 SELECT
@@ -64,19 +66,19 @@ WHERE book_id = ?
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, ErrBookNotFound
+		return Book{}, ErrBookNotFound
 	}
 
 	if err != nil {
-		return nil, err
+		return Book{}, err
 	}
 
-	return &book, nil
+	return book, nil
 }
 
 // GetBookByTitle :
 // WARNING: assume that each book title is unique !
-func (d *Database) GetBookByTitle(title string) (*Book, error) {
+func (d *Database) GetBookByTitle(title string) (Book, error) {
 	const query = `
 SELECT
 	book_id,
@@ -102,14 +104,14 @@ WHERE title = ?
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, ErrBookNotFound
+		return Book{}, ErrBookNotFound
 	}
 
 	if err != nil {
-		return nil, err
+		return Book{}, err
 	}
 
-	return &book, nil
+	return book, nil
 }
 
 func (d *Database) GetBooksBySeriesId(seriesId string) ([]Book, error) {
@@ -230,7 +232,7 @@ func (d *Database) DeleteBookById(id string) error {
 	return nil
 }
 
-func (d *Database) UpdateBook(book *Book) error {
+func (d *Database) UpdateBook(book Book) (Book, error) {
 
 	result, err := d.db.Exec(
 		`
@@ -254,17 +256,17 @@ WHERE book_id = ?
 	)
 
 	if err != nil {
-		return err
+		return Book{}, err
 	}
 
 	n, err := result.RowsAffected()
 	if err != nil {
-		return err
+		return Book{}, err
 	}
 
 	if n == 0 {
-		return ErrBookNotFound
+		return Book{}, ErrBookNotFound
 	}
 
-	return nil
+	return book, nil
 }

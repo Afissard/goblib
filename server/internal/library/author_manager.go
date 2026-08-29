@@ -1,48 +1,61 @@
 package library
 
-import "github.com/afissard/goblib/server/internal/database"
+import (
+	"github.com/afissard/goblib/server/internal/database"
+	"github.com/afissard/goblib/shared/api"
+)
 
-func (m *Manager) CreateAuthor(author database.Author) (*database.Author, error) {
+func (m *Manager) CreateAuthor(author database.Author) (*api.Author, error) {
 	created, err := m.db.CreateAuthor(author)
 	if err != nil {
 		return nil, err
 	}
 
-	return &created, nil
+	authorApi := database.ToApiAuthor(created)
+	return &authorApi, nil
 }
 
-func (m *Manager) GetAuthorById(id string) (*database.Author, error) {
+func (m *Manager) GetAuthorById(id string) (*api.Author, error) {
 	author, err := m.db.GetAuthorById(id)
 	if err != nil {
 		return nil, err
 	}
-	return &author, nil
+
+	authorApi := database.ToApiAuthor(author)
+	return &authorApi, nil
 }
 
-func (m *Manager) GetAuthorByName(name string) (*database.Author, error) {
+func (m *Manager) GetAuthorByName(name string) (*api.Author, error) {
 	author, err := m.db.GetAuthorByName(name)
 	if err != nil {
 		return nil, err
 	}
-	return &author, nil
+	authorApi := database.ToApiAuthor(author)
+	return &authorApi, nil
 }
 
 func (m *Manager) DeleteAuthorById(id string) error {
 	return m.db.DeleteAuthorById(id)
 }
 
-func (m *Manager) UpdateAuthor(author database.Author) (*database.Author, error) {
-	updated, err := m.db.UpdateAuthor(&author)
+func (m *Manager) UpdateAuthor(author database.Author) (*api.Author, error) {
+	updated, err := m.db.UpdateAuthor(author)
 	if err != nil {
 		return nil, err
 	}
-	return &updated, nil
+	updatedApi := database.ToApiAuthor(updated)
+	return &updatedApi, nil
 }
 
-func (m *Manager) ListAuthors() (*[]database.Author, error) {
+func (m *Manager) ListAuthors() (*[]api.Author, error) {
 	authors, err := m.db.ListAuthors()
 	if err != nil {
 		return nil, err
 	}
-	return &authors, nil
+
+	authorsApi := make([]api.Author, len(authors))
+	for i, author := range authors {
+		authorsApi[i] = database.ToApiAuthor(author)
+	}
+	return &authorsApi, nil
 }

@@ -9,7 +9,7 @@ import (
 
 var ErrChapterNotFound = errors.New("chapter not found")
 
-func (d *Database) CreateChapter(chapter *Chapter) error {
+func (d *Database) CreateChapter(chapter Chapter) (Chapter, error) {
 	var query = `
 INSERT INTO chapters (
 	chapter_id,
@@ -26,12 +26,12 @@ INSERT INTO chapters (
 		chapter.Summary,
 	)
 	if err != nil {
-		return err
+		return Chapter{}, err
 	}
-	return nil
+	return chapter, nil
 }
 
-func (d *Database) GetChapterByID(id string) (*Chapter, error) {
+func (d *Database) GetChapterById(id string) (Chapter, error) {
 	var query = `
 SELECT chapter_id, book_id, title, summary
 FROM chapters
@@ -46,14 +46,36 @@ WHERE chapter_id = ?
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrChapterNotFound
+			return Chapter{}, ErrChapterNotFound
 		}
-		return nil, err
+		return Chapter{}, err
 	}
-	return &chapter, nil
+	return chapter, nil
 }
 
-func (d *Database) GetChaptersByBookID(bookID string) ([]Chapter, error) {
+func (d *Database) GetChapterByTitle(title string) (Chapter, error) {
+	var query = `
+SELECT chapter_id, book_id, title, summary
+FROM chapters
+WHERE title = ?
+`
+	var chapter Chapter
+	err := d.db.QueryRow(query, title).Scan(
+		&chapter.ID,
+		&chapter.BookID,
+		&chapter.Title,
+		&chapter.Summary,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return Chapter{}, ErrChapterNotFound
+		}
+		return Chapter{}, err
+	}
+	return chapter, nil
+}
+
+func (d *Database) GetChaptersByBookId(bookID string) ([]Chapter, error) {
 	var query = `
 SELECT chapter_id, book_id, title, summary
 FROM chapters
@@ -116,7 +138,7 @@ FROM chapters
 	return chapters, nil
 }
 
-func (d *Database) DeleteChapterByID(id string) error {
+func (d *Database) DeleteChapterById(id string) error {
 	var query = `
 DELETE FROM chapters
 WHERE chapter_id = ?
@@ -128,7 +150,7 @@ WHERE chapter_id = ?
 	return nil
 }
 
-func (d *Database) UpdateChapter(chapter *Chapter) error {
+func (d *Database) UpdateChapter(chapter Chapter) (Chapter, error) {
 	var query = `
 UPDATE chapters
 SET book_id = ?, title = ?, summary = ?
@@ -136,7 +158,7 @@ WHERE chapter_id = ?
 `
 	_, err := d.db.Exec(query, chapter.BookID, chapter.Title, chapter.Summary, chapter.ID)
 	if err != nil {
-		return err
+		return Chapter{}, err
 	}
-	return nil
+	return chapter, nil
 }
