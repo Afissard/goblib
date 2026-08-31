@@ -6,109 +6,160 @@ import (
 	"net/http"
 
 	"github.com/afissard/goblib/server/internal/database"
-	"github.com/afissard/goblib/server/internal/library"
 	shared "github.com/afissard/goblib/shared/logger"
 )
 
-type BookHandler struct {
-	Manager *library.Manager
-	Logger  *shared.Logger
-}
-
-func NewBookHandler(manager *library.Manager, logger *shared.Logger) *BookHandler {
-	return &BookHandler{
-		Manager: manager,
-		Logger:  logger,
+func httpRequestToBook(r *http.Request) database.Book {
+	return database.Book{
+		ID:             r.FormValue("id"),
+		SeriesID:       r.FormValue("series_id"),
+		Title:          r.FormValue("title"),
+		AuthorID:       r.FormValue("author_id"),
+		Summary:        r.FormValue("summary"),
+		LanguageID:     r.FormValue("language_id"),
+		CoverImagePath: r.FormValue("cover_image_path"),
 	}
 }
 
-func (h *BookHandler) Get(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetBookById(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	if id == "" {
-		h.Logger.LogMessage("Bookhandler.Get : missing book id", shared.LogLevelError)
+		h.Logger.LogMessage("BookHandler.GetBookById : missing book id", shared.LogLevelError)
 		http.Error(w, "missing book id", http.StatusBadRequest)
 		return
 	}
 
-	book, err := h.Manager.GetBookById(id)
+	book, err := h.Manager.GetBookByID(id)
 	if err != nil {
 		if errors.Is(err, database.ErrBookNotFound) {
-			h.Logger.LogMessage("Bookhandler.Get : not found", shared.LogLevelError)
+			h.Logger.LogMessage("BookHandler.GetBookById : book not found", shared.LogLevelError)
 			http.Error(w, "book not found", http.StatusNotFound)
 			return
 		}
-
-		h.Logger.LogMessage("Bookhandler.Get : internal server error while searching for book", shared.LogLevelError)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Logger.LogMessage("BookHandler.GetBookById : failed to get book", shared.LogLevelError)
+		http.Error(w, "failed to get book", http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-
 	if err := json.NewEncoder(w).Encode(book); err != nil {
-		h.Logger.LogMessage("Bookhandler.Get : internal server error while encoding response", shared.LogLevelError)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Logger.LogMessage("BookHandler.GetBookById : failed to encode book", shared.LogLevelError)
+		http.Error(w, "failed to encode book", http.StatusInternalServerError)
+		return
 	}
-	h.Logger.LogMessage("Bookhandler.Get : wrote response", shared.LogLevelInfo)
 }
 
-func (h *BookHandler) List(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetBookByTitle(w http.ResponseWriter, r *http.Request) {
+	title := r.PathValue("title")
+	if title == "" {
+		h.Logger.LogMessage("BookHandler.GetBookByTitle : missing book title", shared.LogLevelError)
+		http.Error(w, "missing book title", http.StatusBadRequest)
+		return
+	}
+
+	book, err := h.Manager.GetBookByTitle(title)
+	if err != nil {
+		if errors.Is(err, database.ErrBookNotFound) {
+			h.Logger.LogMessage("BookHandler.GetBookByTitle : book not found", shared.LogLevelError)
+			http.Error(w, "book not found", http.StatusNotFound)
+			return
+		}
+		h.Logger.LogMessage("BookHandler.GetBookByTitle : failed to get book", shared.LogLevelError)
+		http.Error(w, "failed to get book", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(book); err != nil {
+		h.Logger.LogMessage("BookHandler.GetBookByTitle : failed to encode book", shared.LogLevelError)
+		http.Error(w, "failed to encode book", http.StatusInternalServerError)
+		return
+	}
+}
+
+func (h *Handler) ListBooks(w http.ResponseWriter, r *http.Request) {
 	books, err := h.Manager.ListBooks()
 	if err != nil {
-		h.Logger.LogMessage("Bookhandler.List : error while searching for books", shared.LogLevelError)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Logger.LogMessage("BookHandler.ListBooks : failed to list books", shared.LogLevelError)
+		http.Error(w, "failed to list books", http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(books); err != nil {
-		h.Logger.LogMessage("Bookhandler.List : error while encoding response", shared.LogLevelError)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Logger.LogMessage("BookHandler.ListBooks : failed to encode books", shared.LogLevelError)
+		http.Error(w, "failed to encode books", http.StatusInternalServerError)
+		return
 	}
-	h.Logger.LogMessage("Bookhandler.List : wrote response", shared.LogLevelInfo)
 }
 
-func (h *BookHandler) Create(w http.ResponseWriter, r *http.Request) {
-	h.Manager.CreateBook(w, r)
-	h.Logger.LogMessage("Bookhandler.Create : wrote response", shared.LogLevelInfo)
+func (h *Handler) CreateBook(w http.ResponseWriter, r *http.Request) {
+	newBook := httpRequestToBook(r)
+	book, err := h.Manager.CreateBook(newBook)
+	if err != nil {
+		h.Logger.LogMessage("BookHandler.CreateBook : failed to create book", shared.LogLevelError)
+		http.Error(w, "failed to create book", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(book); err != nil {
+		h.Logger.LogMessage("BookHandler.CreateBook : failed to encode book", shared.LogLevelError)
+		http.Error(w, "failed to encode book", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
 }
 
-func (h *BookHandler) Update(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) UpdateBook(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	if id == "" {
+		h.Logger.LogMessage("BookHandler.UpdateBook : missing book id", shared.LogLevelError)
 		http.Error(w, "missing book id", http.StatusBadRequest)
 		return
 	}
-	_, err := h.Manager.GetBookById(id)
+
+	updatedBook := httpRequestToBook(r)
+	book, err := h.Manager.UpdateBook(updatedBook)
 	if err != nil {
 		if errors.Is(err, database.ErrBookNotFound) {
+			h.Logger.LogMessage("BookHandler.UpdateBook : book not found", shared.LogLevelError)
 			http.Error(w, "book not found", http.StatusNotFound)
 			return
 		}
-		h.Logger.LogMessage("Bookhandler.Update : internal server error while searching for book", shared.LogLevelError)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Logger.LogMessage("BookHandler.UpdateBook : failed to update book", shared.LogLevelError)
+		http.Error(w, "failed to update book", http.StatusInternalServerError)
 		return
 	}
 
-	h.Manager.UpdateBook(w, r)
-	h.Logger.LogMessage("Bookhandler.Update : wrote response", shared.LogLevelInfo)
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(book); err != nil {
+		h.Logger.LogMessage("BookHandler.UpdateBook : failed to encode book", shared.LogLevelError)
+		http.Error(w, "failed to encode book", http.StatusInternalServerError)
+		return
+	}
 }
 
-func (h *BookHandler) Delete(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) DeleteBookById(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	if id == "" {
-		h.Logger.LogMessage("Bookhandler.Delete : missing book id", shared.LogLevelError)
+		h.Logger.LogMessage("BookHandler.DeleteBookById : missing book id", shared.LogLevelError)
 		http.Error(w, "missing book id", http.StatusBadRequest)
 		return
 	}
+
 	err := h.Manager.DeleteBookById(id)
 	if err != nil {
 		if errors.Is(err, database.ErrBookNotFound) {
-			h.Logger.LogMessage("Bookhandler.Delete : book not found", shared.LogLevelError)
+			h.Logger.LogMessage("BookHandler.DeleteBookById : book not found", shared.LogLevelError)
 			http.Error(w, "book not found", http.StatusNotFound)
-		} else {
-			h.Logger.LogMessage("Bookhandler.Delete : internal server error while deleting book", shared.LogLevelError)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
+		h.Logger.LogMessage("BookHandler.DeleteBookById : failed to delete book", shared.LogLevelError)
+		http.Error(w, "failed to delete book", http.StatusInternalServerError)
+		return
 	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
